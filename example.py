@@ -42,7 +42,7 @@ for area in areas:
     threads = []
     for site in sites:
         master = crawler.BackpageCrawler(site, [], data_handler, area,
-                                         eng, 1, 1)
+                                         eng, 4, 1)
 
         threads.append(master)
         master.start()

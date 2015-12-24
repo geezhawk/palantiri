@@ -121,6 +121,7 @@ class SearchCrawler(threading.Thread):
 
     def notify(self, message):
         if isinstance(message, common.Website):
+            logging.info("Dumping %s" % str(message.url))
             threading.Thread(target=self.dbhandler.dump(message))
             return True
         else:

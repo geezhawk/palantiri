@@ -9,6 +9,7 @@ import re
 import datetime
 from bs4 import BeautifulSoup
 import pymongo.errors
+from palantiri import util
 
 from . import errors
 from . import common
@@ -75,9 +76,10 @@ class EngineWrapper(threading.Thread):
         self.to_visit = parent.to_visit
         self.stop = parent.stop
         self.delay = parent.delay
+        self.sighandle = parent.sighandle
 
     def run(self):
-        while self.to_visit or not self.stop.is_set():
+        while self.sighandle.isalive and (self.to_visit or not self.stop.is_set()):
             # There are more sites to visit
             if self.to_visit:
                 url = self.to_visit.pop()
@@ -96,8 +98,8 @@ class EngineWrapper(threading.Thread):
 
 class SearchCrawler(threading.Thread):
     def __init__(self, kwds = [], dbhandler = None, eng = engine.DefaultEngine(),
-            max_threads = 10, delay = 1, group = None, name = None,
-            args = (), kwargs = None):
+            max_threads = 10, delay = 1, sighandle = util.ShutdownHandler(2),
+            group = None, name = None, args = (), kwargs = None):
         super(SearchCrawler, self).__init__(group = group, name = name,
                 args = args, kwargs = kwargs)
         self.max_threads = max_threads
@@ -108,6 +110,7 @@ class SearchCrawler(threading.Thread):
         self.delay = delay
         self.kwds = kwds
         self.children = []
+        self.sighandle = sighandle
         return
 
     def next_page(self, soup):
@@ -134,14 +137,16 @@ class SearchCrawler(threading.Thread):
 
 class BackpageCrawler(SearchCrawler):
     def __init__(self, site, kwds = [], dbhandler = None, area = "atlanta",
-            eng = engine.DefaultEngine(), max_threads = 10, delay = 1):
+            eng = engine.DefaultEngine(), max_threads = 10, delay = 1,
+            sighandle = util.ShutdownHandler(2)):
         self.baseurl = "".join(["http://", area, ".backpage.com/", site, "/"])
         if kwds:
             keywords = " ".join(kwds)
             self.url = "?".join([self.baseurl, keywords])
         else:
             self.url = self.baseurl
-        super(BackpageCrawler, self).__init__(kwds, dbhandler, eng, max_threads, delay)
+        super(BackpageCrawler, self).__init__(kwds, dbhandler, eng, max_threads,
+                delay, sighandle)
 
     def next_page(self, soup):
         links = soup.find_all("a", href=True)
@@ -180,7 +185,7 @@ class BackpageCrawler(SearchCrawler):
         time.sleep(self.delay)
         url = self.url
 
-        while url:
+        while url and self.sighandle.isalive:
             site = self.eng.get_page_source(url)
             if site:
                 soup = BeautifulSoup(site.source, "lxml")

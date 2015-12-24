@@ -4,10 +4,12 @@
 
 import threading
 from pymongo import MongoClient
+import time
 
 from src.core import engine
 from src.core import crawler
 from src.core import datahandler
+from palantiri import util
 
 areas = [
         "albanyga",
@@ -20,7 +22,14 @@ areas = [
         "nwga",
         "savannah",
         "statesboro",
-        "valdosta"
+        "valdosta",
+        "birmingham",
+        "nashville",
+        "panamacity",
+        "myrtlebeach",
+        "memphis",
+        "miami",
+        "tampa"
         ]
 
 sites = [
@@ -35,16 +44,32 @@ sites = [
         ]
 
 data_handler = datahandler.MongoDBDump("127.0.0.1", "27017", "crawler",
-        "search", replset = "rs0")
+        "search")
 
 eng = engine.TorEngine()
+sighandle = util.ShutdownHandler(2)
+
+def first_finished(threads):
+    for i in range(0, len(threads)):
+        if not threads[i].isAlive():
+            return i
+    return None
+
 for area in areas:
     threads = []
     for site in sites:
-        master = crawler.BackpageCrawler(site, [], data_handler, area,
-                                         eng, 1, 1)
+        if len(threads) > 4:
+            idx = first_finished(threads)
+            if idx:
+                del threads[idx]
+            else:
+                time.sleep(1)
+                continue
 
+        master = crawler.BackpageCrawler(site, [], data_handler, area,
+                                         eng, 1, 4, sighandle)
         threads.append(master)
         master.start()
+
     for t in threads:
         t.join()

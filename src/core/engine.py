@@ -10,8 +10,6 @@ from stem import Signal
 import stem.connection
 import getpass
 
-import stem.process
-from stem.util import term
 import http.client
 
 from . import errors

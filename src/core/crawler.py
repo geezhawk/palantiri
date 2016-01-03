@@ -98,11 +98,22 @@ class EngineWrapper(threading.Thread):
         return
 
 class SearchCrawler(threading.Thread):
+    # static log level translation dict
+    logLevelDict = {
+            "CRITICAL": logging.CRITICAL,
+            "ERROR": logging.ERROR,
+            "WARNING": logging.WARNING,
+            "INFO": logging.INFO,
+            "DEBUG": logging.DEBUG,
+            "NOTSET": logging.NOTSET
+            }
+
     def __init__(self, kwds = [], dbhandler = None, eng = engine.DefaultEngine(),
-            max_threads = 10, delay = 1, group = None, name = None,
+            max_threads = 10, delay = 1, loglevel = "NOTSET", group = None, name = None,
             args = (), kwargs = None):
         super(SearchCrawler, self).__init__(group = group, name = name,
                 args = args, kwargs = kwargs)
+        logging.basicConfig(level=self.logLevelDict[loglevel])
         self.max_threads = max_threads
         self.eng = eng
         self.dbhandler = dbhandler
@@ -139,14 +150,16 @@ class SearchCrawler(threading.Thread):
 
 class BackpageCrawler(SearchCrawler):
     def __init__(self, site, kwds = [], dbhandler = None, area = "atlanta",
-            eng = engine.DefaultEngine(), max_threads = 10, delay = 1):
+            eng = engine.DefaultEngine(), max_threads = 10, delay = 1,
+            loglevel = "NOTSET"):
         self.baseurl = "".join(["http://", area, ".backpage.com/", site, "/"])
         if kwds:
             keywords = " ".join(kwds)
             self.url = "?".join([self.baseurl, keywords])
         else:
             self.url = self.baseurl
-        super(BackpageCrawler, self).__init__(kwds, dbhandler, eng, max_threads, delay)
+        super(BackpageCrawler, self).__init__(kwds, dbhandler, eng, max_threads, 
+                                              delay, loglevel)
 
     def next_page(self, soup):
         links = soup.find_all("a", href=True)
@@ -215,7 +228,7 @@ class BackpageContinuousCrawler(BackpageCrawler):
 
         """
         BackpageCrawler.__init__(self, site, kwds, dbhandler, area, eng, max_threads,
-                                 delay)
+                                 delay, loglevel)
         self._avg_delay = delay
 
     @property

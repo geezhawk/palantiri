@@ -2,7 +2,6 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-import threading
 from pymongo import MongoClient
 
 from src.core import engine
@@ -35,14 +34,13 @@ sites = [
         ]
 
 data_handler = datahandler.MongoDBDump("127.0.0.1", "27017", "crawler",
-        "search", replset = "rs0")
-
+        "search")
 eng = engine.TorEngine()
 for area in areas:
     threads = []
     for site in sites:
         master = crawler.BackpageCrawler(site, [], data_handler, area,
-                                         eng, 4, 1)
+                                         eng, 4, 1, "CRITICAL")
 
         threads.append(master)
         master.start()

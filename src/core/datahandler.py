@@ -141,7 +141,7 @@ class PostgreSQLDump(object):
         try:
             cur = self.conn.cursor()
             cur.execute(
-            """SELECT id FROM page WHERE url = '{}'""".format(_id)
+            """SELECT id FROM page WHERE url = '{}';""".format(_id)
                 )
             return cur.fetchone() is not None
         except (psycopg2.IntegrityError, psycopg2.InternalError):

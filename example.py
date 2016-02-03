@@ -44,7 +44,7 @@ sites = [
 
 user = input("PostgreSQL Username: ")
 pwd = getpass.getpass("PostgreSQL Password: ")
-data_handler = datahandler.PostgreSQLDump("danrobertson.org", "crawler2",
+data_handler = datahandler.PostgreSQLDump("104.196.43.176", "crawler",
         user = user, pwd = pwd)
 eng = engine.TorEngine()
 
